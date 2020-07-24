@@ -7,6 +7,8 @@ const cookieParser = require('cookie-parser');
 const port = process.env.PORT | 8001;
 let app = express();
 console.log('PORT env: ', process.env.PORT);
+console.log('PORT env: ', process.env.PORT);
+console.log('$port: ', port);
 
 app.use(express.static('public'));
 app.use(cookieParser());
