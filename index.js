@@ -4,8 +4,8 @@
 const express = require('express');
 const cookieParser = require('cookie-parser');
 
-const port = process.env.PORT | 8001;
 let app = express();
+const port = process.env.PORT | 8001;
 console.log('PORT env: ', process.env.PORT);
 console.log('PORT env: ', process.env.PORT);
 console.log('$port: ', port);
@@ -23,7 +23,7 @@ app.get('/set-cookie', (req, res) => {
 	res.redirect('/');
 });
 
-let server = app.listen(port, function() {
+let server = app.listen(process.env.PORT | 8001, function() {
 	const host = server.address().address;
 	console.log('Server started! Listening at http://%s:%s', host, port);
 });
