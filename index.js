@@ -4,7 +4,7 @@
 const express = require('express');
 const cookieParser = require('cookie-parser');
 
-const port = 8001;
+const port = process.env.PORT | 8001;
 let app = express();
 
 app.use(express.static('public'));
