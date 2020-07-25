@@ -21,8 +21,6 @@ let qrCode = null;
 let authenticated = false;
 
 let app = express();
-console.log('PORT env: ', process.env.PORT | 8001);
-const port = process.env.PORT | 8001;
 
 app.use(express.static('public'));
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -80,8 +78,9 @@ app.get('/logout', (req, res) => {
 	});
 });
 
-let server = app.listen(port, function() {
+let server = app.listen(process.env.PORT, function() {
 	const host = server.address().address;
+	const port = server.address().port;
 	console.log('Server started! Listening at http://%s:%s', host, port);
 });
 
