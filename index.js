@@ -21,8 +21,8 @@ let qrCode = null;
 let authenticated = false;
 
 let app = express();
-const port = process.env.PORT | 8001;
 console.log('PORT env: ', process.env.PORT | 8001);
+const port = process.env.PORT | 8001;
 
 app.use(express.static('public'));
 app.use(bodyParser.urlencoded({ extended: true }));
