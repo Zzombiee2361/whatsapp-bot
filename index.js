@@ -91,6 +91,9 @@ if(fs.existsSync('./session.json')) {
 }
 
 const client = new Client({
+	puppeteer: {
+		args: ['--no-sandbox', '--disable-setuid-sandbox']
+	},
 	session: sessionData,
 	restartOnAuthFail: true,
 });
