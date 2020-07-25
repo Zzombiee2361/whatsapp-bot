@@ -58,8 +58,8 @@ $('form').on('submit', function(event) {
 	});
 });
 
-// $('.logout-btn').on('click', function() {
-// 	$.get('/logout', function() {
-// 		authenticate();
-// 	});
-// });
+$('.logout-btn').on('click', function() {
+	$.get('/logout', function() {
+		authenticate();
+	});
+});

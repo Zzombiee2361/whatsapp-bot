@@ -1,56 +1,43 @@
-const { Client } = require('whatsapp-web.js');
-const qrcode = require('qrcode-terminal');
 const fs = require('fs');
 const express = require('express');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
-
-const commands = {
-help: `Selamat datang di whatsapp-bot test.
-Cara menggunakan
-    \`\`\`!bot <perintah>\`\`\`
-Perintah yang tersedia:
-\`\`\`help    Tampilkan pesan ini
-version Tampilkan versi bot
-hi      Hello!\`\`\``,
-version: '0.0.1',
-hi: 'Hello there',
-};
-
-let qrCode = null;
-let authenticated = false;
+const waConnect = require('./whatsapp');
 
 let app = express();
+let instance = new waConnect();
 
 app.use(express.static('public'));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 app.get('/authenticate', async (req, res) => {
-	if(qrCode === null && sessionData && req.cookies.browser_id !== sessionData.WABrowserId) {
+	if(instance.qrCode === null && instance.sessionData && req.cookies.browser_id !== instance.sessionData.WABrowserId) {
 		res.json({
 			status: 'conflict'
 		});
-	} else if(authenticated && qrCode !== null && req.query.qr === qrCode) {
-		res.cookie('browser_id', sessionData.WABrowserId);
-		qrCode = null;
+	} else if(instance.authenticated && instance.qrCode !== null && req.query.qr === instance.qrCode) {
+		res.cookie('browser_id', instance.sessionData.WABrowserId);
+		instance.qrCode = null;
 	}
 
+	const state = (instance.authenticated && instance.client ? await instance.client.getState() : 'DISCONNECTED');
 	res.json({
 		status: 'success',
 		data: {
-			qr: qrCode,
+			state: state,
+			qr: instance.qrCode,
 		},
 	});
 });
 
 app.post('/send', (req, res) => {
-	if(!authenticated) {
+	if(!instance.authenticated) {
 		res.status(401).json({
 			status: 'error',
 			message: 'Unauthenticated',
 		});
-	} else if(sessionData && req.cookies.browser_id !== sessionData.WABrowserId) {
+	} else if(instance.sessionData && req.cookies.browser_id !== instance.sessionData.WABrowserId) {
 		res.status(403).json({
 			status: 'error',
 			message: 'Unauthorized',
@@ -63,16 +50,16 @@ app.post('/send', (req, res) => {
 
 	console.log('Sending message to: ', nomor);
 	console.log('Message: ', text);
-	client.sendMessage(nomor, text);
+	instance.client.sendMessage(nomor, text);
 	res.json({
 		status: 'success'
 	});
 });
 
 app.get('/logout', (req, res) => {
-	client.logout();
+	instance.client.logout();
 	fs.unlinkSync('./session.json');
-	authenticated = false;
+	instance = new waConnect();
 	res.json({
 		status: 'success'
 	});
@@ -84,54 +71,10 @@ let server = app.listen(process.env.PORT, function() {
 	console.log('Server started! Listening at http://%s:%s', host, port);
 });
 
-let sessionData;
-if(fs.existsSync('./session.json')) {
-	sessionData = require('./session.json');
-}
-
-const client = new Client({
-	puppeteer: {
-		args: ['--no-sandbox', '--disable-setuid-sandbox']
-	},
-	session: sessionData,
-	restartOnAuthFail: true,
-});
-
-client.on('qr', (qr) => {
-	console.log('QR Received', qr);
-	qrCode = qr;
-});
-
-client.on('authenticated', (session) => {
-	sessionData = session;
-	fs.writeFile('./session.json', JSON.stringify(session), (err) => {
-		if(err) {
-			console.error(err);
-		}
-	});
-	authenticated = true;
-});
-
-client.on('auth_failure', (message) => {
-	console.log('Authentication Failed: ', message);
-	fs.unlinkSync('./session.json');
-	authenticated = false;
-});
-
-client.on('ready', () => {
-	console.log('Client is ready');
-});
-
-client.on('message', (msg) => {
-	if(/^!bot/.test(msg.body)) {
-		const cmd = msg.body.split(' ')[1];
-		console.log('Command: ', msg.body);
-		msg.reply(commands[cmd]);
+instance.client.on('disconnected', (reason) => {
+	console.log('DISCONNECTED:', reason);
+	if(reason === 'UNPAIRED') {
+		fs.unlinkSync('./session.json');
+		instance = new waConnect();
 	}
 });
-
-client.on('disconnected', (state) => {
-	console.log('Disconnected: ', state);
-});
-
-client.initialize();
